@@ -1,0 +1,26 @@
+# prometheus.yml
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'inertia-seed'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          node: 'seed'
+          network: 'inertia-testnet'
+
+  - job_name: 'inertia-harvester'
+    static_configs:
+      - targets: ['localhost:9091']
+        labels:
+          node: 'harvester'
+          network: 'inertia-testnet'
+
+  - job_name: 'inertia-node-3'
+    static_configs:
+      - targets: ['localhost:9092']
+        labels:
+          node: 'full'
+          network: 'inertia-testnet'
