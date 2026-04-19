@@ -1,0 +1,62 @@
+# Dockerfile.raspberrypi
+# For Raspberry Pi (ARM64 / ARMv7)
+
+FROM --platform=linux/arm64 rust:1.85-slim-bookworm AS builder
+
+WORKDIR /build
+
+RUN apt-get update && apt-get install -y \
+    pkg-config \
+    libssl-dev \
+    libudev-dev \
+    libasound2-dev \
+    clang \
+    llvm \
+    cmake \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY Cargo.toml Cargo.lock ./
+
+RUN mkdir src && \
+    echo "fn main() {}" > src/main.rs && \
+    echo "#[cfg(test)] mod tests {}" > src/lib.rs && \
+    cargo build --release && \
+    rm -rf src
+
+COPY src ./src
+COPY inertia-core ./inertia-core
+COPY inertia-transport ./inertia-transport
+COPY inertia-consensus ./inertia-consensus
+COPY inertia-storage ./inertia-storage
+COPY inertia-crypto ./inertia-crypto
+COPY inertia-network ./inertia-network
+COPY inertia-client ./inertia-client
+
+RUN cargo build --release --features "linux-bluetooth audio-support"
+
+# Runtime stage
+FROM --platform=linux/arm64 debian:bookworm-slim
+
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    libssl3 \
+    libudev1 \
+    libasound2 \
+    bluez \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /build/target/release/inertiad /usr/local/bin/inertiad
+COPY scripts/entrypoint.sh /entrypoint.sh
+COPY scripts/healthcheck.sh /healthcheck.sh
+
+RUN chmod +x /entrypoint.sh /healthcheck.sh
+
+RUN mkdir -p /data
+VOLUME ["/data"]
+
+EXPOSE 18888 18889
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD /healthcheck.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
