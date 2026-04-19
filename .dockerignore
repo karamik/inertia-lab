@@ -1,0 +1,18 @@
+# .dockerignore
+target/
+.git/
+.gitignore
+README.md
+*.md
+*.log
+*.tmp
+data/
+.DS_Store
+.cargo/
+.github/
+.gitlab/
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
