@@ -1,0 +1,237 @@
+[package]
+name = "inertia"
+version = "0.1.0"
+edition = "2021"
+authors = ["International Group of Developers <inertia@inertia.network>"]
+description = "Inertia Protocol — Post-Internet Digital Species. A self-evolving, immune-capable digital organism that survives without internet."
+license = "AGPL-3.0"
+repository = "https://github.com/inertia-lab/spore-0"
+homepage = "https://inertia.network"
+documentation = "https://docs.inertia.network"
+readme = "README.md"
+keywords = ["blockchain", "p2p", "offline", "consensus", "mesh-network", "post-internet"]
+categories = ["cryptography", "network-programming", "no-std"]
+
+[features]
+default = ["full"]
+full = [
+    "linux-bluetooth",
+    "audio-support",
+    "dns-client",
+    "opencv-support",
+    "serde-support",
+]
+
+# Transport modules
+linux-bluetooth = ["dep:bluer"]
+cross-bluetooth = ["dep:btleplug", "dep:tokio"]
+audio-support = ["dep:cpal"]
+dns-client = ["dep:hickory-resolver", "dep:hickory-proto", "dep:futures"]
+doh = ["dep:reqwest"]
+opencv-support = ["dep:opencv"]
+
+# Serialization
+serde-support = ["dep:serde", "dep:bincode"]
+
+# Logging and monitoring
+logging = ["dep:log", "dep:env_logger"]
+metrics = ["dep:prometheus"]
+
+# Testing
+test-full = ["full", "rand/small_rng"]
+
+[[bin]]
+name = "inertiad"
+path = "src/main.rs"
+required-features = ["full"]
+
+[lib]
+name = "inertia"
+path = "src/lib.rs"
+
+[dependencies]
+# ============ Cryptography ============
+ed25519-dalek = { version = "2.0", features = ["rand_core"] }
+blake3 = { version = "1.5", features = ["rayon", "std"] }
+sha2 = "0.10"
+aes-gcm = "0.10"
+x25519-dalek = { version = "2.0", features = ["static_secrets"] }
+chacha20poly1305 = "0.10"
+hkdf = "0.12"
+hmac = "0.12"
+pbkdf2 = "0.12"
+
+# ============ Random Number Generation ============
+rand = { version = "0.8", features = ["getrandom", "small_rng"] }
+rand_chacha = "0.3"
+rand_distr = "0.4"
+
+# ============ Network & Transport ============
+# Bluetooth (Linux)
+bluer = { version = "0.16", optional = true }
+# Bluetooth (cross-platform)
+btleplug = { version = "0.11", optional = true, features = ["tokio-runtime"] }
+# Async runtime
+tokio = { version = "1.0", features = ["full"], optional = true }
+futures = { version = "0.3", optional = true }
+# DNS
+hickory-resolver = { version = "0.24", optional = true }
+hickory-proto = { version = "0.24", optional = true }
+# DNS-over-HTTPS
+reqwest = { version = "0.11", optional = true, features = ["blocking", "json"] }
+# Audio for ultrasound
+cpal = { version = "0.15", optional = true }
+# LoRa (serial port)
+serialport = { version = "4.2", optional = true }
+# USB
+rusb = { version = "0.9", optional = true }
+
+# ============ Encoding ============
+base32 = "0.4"
+base64 = "0.21"
+hex = "0.4"
+
+# ============ Serialization ============
+serde = { version = "1.0", features = ["derive"], optional = true }
+bincode = { version = "1.3", optional = true }
+rmp-serde = { version = "1.1", optional = true }
+postcard = { version = "1.0", optional = true }
+
+# ============ Computer Vision (Astronomical Anchor) ============
+opencv = { version = "0.85", optional = true, features = ["opencv-43"] }
+
+# ============ Mathematics & Astrometry ============
+libm = "0.2"
+nalgebra = { version = "0.32", optional = true }
+splines = { version = "4.0", optional = true }
+
+# ============ Data Compression ============
+lz4 = { version = "1.24", optional = true }
+snap = { version = "1.1", optional = true }
+zstd = { version = "0.13", optional = true }
+
+# ============ Storage ============
+sled = { version = "0.34", optional = true }
+rocksdb = { version = "0.21", optional = true }
+lmdb = { version = "0.8", optional = true }
+
+# ============ Logging ============
+log = { version = "0.4", optional = true }
+env_logger = { version = "0.10", optional = true }
+pretty_env_logger = { version = "0.5", optional = true }
+
+# ============ Monitoring ============
+prometheus = { version = "0.13", optional = true }
+
+# ============ CLI ============
+clap = { version = "4.4", features = ["derive", "color"] }
+colored = "2.0"
+indicatif = "0.17"
+dialoguer = "0.11"
+
+# ============ System Calls ============
+nix = { version = "0.27", features = ["fs", "net", "user"] }
+sysinfo = "0.30"
+whoami = "1.4"
+
+# ============ Parallel Processing ============
+rayon = "1.8"
+crossbeam = "0.8"
+
+# ============ Time Handling ============
+chrono = { version = "0.4", features = ["serde"] }
+time = "0.3"
+
+# ============ P2P Networking (optional) ============
+libp2p = { version = "0.52", optional = true, default-features = false, features = ["tcp", "dns", "tokio", "yamux", "noise", "mdns", "ping", "identify"] }
+
+# ============ Error Handling ============
+anyhow = "1.0"
+thiserror = "1.0"
+
+# ============ Utilities ============
+once_cell = "1.19"
+lazy_static = "1.4"
+parking_lot = "0.12"
+dashmap = "5.5"
+
+[dev-dependencies]
+# Testing
+tempfile = "3.8"
+criterion = { version = "0.5", features = ["html_reports"] }
+mockall = "0.12"
+quickcheck = "1.0"
+quickcheck_macros = "1.0"
+proptest = "1.4"
+test-case = "3.3"
+rand = { version = "0.8", features = ["small_rng"] }
+
+# Test utilities
+serial_test = "3.0"
+assert_cmd = "2.0"
+predicates = "3.0"
+
+# Benchmarks
+[[bench]]
+name = "consensus"
+harness = false
+
+[[bench]]
+name = "transport"
+harness = false
+
+[[bench]]
+name = "fountain"
+harness = false
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+strip = true
+debug = false
+panic = "abort"
+
+[profile.dev]
+opt-level = 1
+debug = true
+
+[profile.test]
+opt-level = 2
+debug = true
+
+[workspace]
+members = [
+    "inertia-core",
+    "inertia-transport",
+    "inertia-consensus",
+    "inertia-storage",
+    "inertia-crypto",
+    "inertia-network",
+    "inertia-client",
+]
+
+[workspace.dependencies]
+inertia-core = { path = "inertia-core", version = "0.1.0" }
+inertia-transport = { path = "inertia-transport", version = "0.1.0" }
+inertia-consensus = { path = "inertia-consensus", version = "0.1.0" }
+inertia-storage = { path = "inertia-storage", version = "0.1.0" }
+inertia-crypto = { path = "inertia-crypto", version = "0.1.0" }
+inertia-network = { path = "inertia-network", version = "0.1.0" }
+inertia-client = { path = "inertia-client", version = "0.1.0" }
+
+[package.metadata.docs.rs]
+features = ["full"]
+rustdoc-args = ["--cfg", "docsrs"]
+
+[package.metadata.deb]
+maintainer = "Inertia Labs <maintainers@inertia.network>"
+copyright = "2026 Inertia Labs"
+license-file = ["LICENSE", "3"]
+extended-description = """\
+Inertia — first post-internet protocol. A digital species that survives without connectivity.
+Supports Bluetooth, Wi-Fi SSID, 19kHz ultrasound, DNS parasitism, and astronomical verification.
+"""
+
+[package.metadata.rpm]
+package = "inertia"
