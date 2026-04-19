@@ -1,0 +1,166 @@
+# docker-compose.yml
+# Inertia Protocol — Multi-node test network
+
+version: '3.8'
+
+services:
+  # ============ Inertia Seed Node ============
+  inertia-seed:
+    build: .
+    container_name: inertia-seed
+    hostname: inertia-seed
+    restart: unless-stopped
+    network_mode: host  # Required for Bluetooth and WiFi
+    privileged: true     # Required for Bluetooth and network
+    volumes:
+      - ./data/seed:/data
+      - ./config/inertia-config.toml:/config/inertia.toml:ro
+    environment:
+      - RUST_LOG=info
+      - INERTIA_MODE=seed
+      - INERTIA_NAME=inertia-seed-001
+      - INERTIA_BLUETOOTH=true
+      - INERTIA_WIFI_STEGO=true
+      - INERTIA_ULTRASOUND=true
+      - INERTIA_BRIDGE_PORT=18888
+    command: >
+      start
+      --name "inertia-seed-001"
+      --mode seed
+      --bluetooth
+      --wifi-stego
+      --ultrasound
+      --bridge-port 18888
+    healthcheck:
+      test: ["CMD", "/healthcheck.sh"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ============ Inertia Harvester Node ============
+  inertia-harvester:
+    build: .
+    container_name: inertia-harvester
+    hostname: inertia-harvester
+    restart: unless-stopped
+    network_mode: host
+    privileged: true
+    volumes:
+      - ./data/harvester:/data
+      - ./config/inertia-config.toml:/config/inertia.toml:ro
+    environment:
+      - RUST_LOG=info
+      - INERTIA_MODE=harvester
+      - INERTIA_NAME=inertia-harvester-001
+      - INERTIA_BLUETOOTH=true
+      - INERTIA_WIFI_STEGO=true
+      - INERTIA_ULTRASOUND=true
+      - INERTIA_BRIDGE_PORT=18889
+      - INERTIA_BOOTSTRAP=inertia-seed:18888
+    command: >
+      start
+      --name "inertia-harvester-001"
+      --mode harvester
+      --bluetooth
+      --wifi-stego
+      --ultrasound
+      --bridge-port 18889
+      --bootstrap inertia-seed:18888
+    depends_on:
+      - inertia-seed
+    healthcheck:
+      test: ["CMD", "/healthcheck.sh"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # ============ Prometheus (Monitoring) ============
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: inertia-prometheus
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./data/prometheus:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.listen-address=:9090'
+    user: "0:0"  # Root for volume permissions
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ============ Grafana (Dashboard) ============
+  grafana:
+    image: grafana/grafana:latest
+    container_name: inertia-grafana
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./data/grafana:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=inertia
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    depends_on:
+      - prometheus
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ============ Inertia Test Network (3+ nodes) ============
+  inertia-node-3:
+    build: .
+    container_name: inertia-node-3
+    hostname: inertia-node-3
+    restart: unless-stopped
+    network_mode: host
+    privileged: true
+    volumes:
+      - ./data/node3:/data
+    environment:
+      - RUST_LOG=info
+      - INERTIA_MODE=full
+      - INERTIA_NAME=inertia-node-003
+      - INERTIA_BLUETOOTH=true
+    command: >
+      start
+      --name "inertia-node-003"
+      --mode full
+      --bluetooth
+      --bootstrap inertia-seed:18888,inertia-harvester:18889
+    depends_on:
+      - inertia-seed
+      - inertia-harvester
+
+  inertia-node-4:
+    build: .
+    container_name: inertia-node-4
+    hostname: inertia-node-4
+    restart: unless-stopped
+    network_mode: host
+    privileged: true
+    volumes:
+      - ./data/node4:/data
+    environment:
+      - RUST_LOG=info
+      - INERTIA_MODE=light
+      - INERTIA_NAME=inertia-node-004
+    command: >
+      start
+      --name "inertia-node-004"
+      --mode light
+      --bootstrap inertia-seed:18888,inertia-harvester:18889
+    depends_on:
+      - inertia-seed
+      - inertia-harvester
