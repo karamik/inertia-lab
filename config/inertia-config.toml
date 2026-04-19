@@ -1,0 +1,48 @@
+# Inertia Configuration File
+
+[node]
+name = "inertia-node"
+mode = "seed"
+datadir = "/data"
+
+[network]
+bridge_port = 18888
+mesh_port = 18889
+bootstrap_peers = []
+
+[transports]
+bluetooth = true
+wifi_stego = true
+ultrasound = false
+dns_spore = false
+lora = false
+
+[consensus]
+poe_weight_decay = 0.00001157
+min_encounters_per_block = 3
+encounter_ttl_hours = 24
+
+[immunity]
+quarantine_threshold = 0.3
+tension_threshold = 0.7
+reputation_decay_rate = 0.99
+
+[metabolism]
+hot_threshold = 0.7
+cold_threshold = 0.1
+metabolism_interval_hours = 1
+fossilization_age_days = 30
+rewarm_cost = 10
+
+[evolution]
+mutation_rate = 0.01
+spread_threshold = 0.65
+death_threshold = 0.3
+
+[logging]
+level = "info"
+json_format = false
+
+[metrics]
+enabled = true
+port = 9090
